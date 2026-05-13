@@ -32,3 +32,6 @@ desktop.ini
 # Temporary files
 *.tmp
 *.log
+
+.claude/
+disney_metadata.json
