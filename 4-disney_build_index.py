@@ -15,7 +15,6 @@ from http import HTTPStatus
 from docx import Document as DocxDocument
 from win32com_doc_ppt_parser import parse_doc_with_win32com, parse_ppt_with_win32com
 from pptx import Presentation
-from pptx.util import Inches
 import pdfplumber
 
 # 配置
@@ -26,7 +25,7 @@ if not DASHSCOPE_API_KEY:
 dashscope.api_key = DASHSCOPE_API_KEY
 
 DOCS_DIR = "迪士尼RAG知识库（完整）"
-MULTIMODAL_EMBEDDING_MODEL = "tongyi-embedding-vision-plus"
+MULTIMODAL_EMBEDDING_MODEL = "multimodal-embedding-v1"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 INDEX_FILE = "disney_index.faiss"
@@ -41,13 +40,6 @@ VIDEO_KNOWLEDGE = [
 ]
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp'}
-
-
-def is_ole2_format(file_path):
-    """读取文件前8字节判断是否为OLE2旧版二进制格式"""
-    with open(file_path, 'rb') as f:
-        header = f.read(8)
-    return header[:4] == b'\xd0\xcf\x11\xe0'
 
 
 def is_ooxml_format(file_path):
@@ -70,6 +62,40 @@ def collect_all_files(root_dir):
     return files
 
 
+def _format_md_table(rows_list):
+    """将表格行列表转换为 Markdown 格式"""
+    if not rows_list:
+        return ""
+    md_table = []
+    header = [cell.text.strip() for cell in rows_list[0].cells]
+    md_table.append("| " + " | ".join(header) + " |")
+    md_table.append("|" + "|".join(["---"] * len(header)) + "|")
+    for row in rows_list[1:]:
+        row_data = [cell.text.strip() for cell in row.cells]
+        md_table.append("| " + " | ".join(row_data) + " |")
+    return "\n".join(md_table)
+
+
+def _process_text_content(full_text, rel_path, all_vectors, metadata_store, doc_id_start):
+    """通用文本处理：分块、embedding、存储"""
+    if not full_text:
+        return doc_id_start
+    chunks = split_text(full_text)
+    print(f"    {len(full_text)} 字符 → {len(chunks)} 个chunk")
+    doc_id = doc_id_start
+    for chunk in chunks:
+        vector = get_text_embedding(chunk)
+        all_vectors.append(vector)
+        metadata_store.append({
+            "id": doc_id,
+            "source": rel_path,
+            "type": "text",
+            "content": chunk
+        })
+        doc_id += 1
+    return doc_id
+
+
 def parse_docx(file_path):
     """解析DOCX文件，提取段落和表格（Markdown格式）"""
     doc = DocxDocument(file_path)
@@ -81,15 +107,9 @@ def parse_docx(file_path):
             all_text.append(text)
 
     for table in doc.tables:
-        if table.rows:
-            md_table = []
-            header = [cell.text.strip() for cell in table.rows[0].cells]
-            md_table.append("| " + " | ".join(header) + " |")
-            md_table.append("|" + "|".join(["---"] * len(header)) + "|")
-            for row in table.rows[1:]:
-                row_data = [cell.text.strip() for cell in row.cells]
-                md_table.append("| " + " | ".join(row_data) + " |")
-            all_text.append("\n".join(md_table))
+        md_table = _format_md_table(table.rows)
+        if md_table:
+            all_text.append(md_table)
 
     return "\n".join(all_text)
 
@@ -132,17 +152,10 @@ def parse_pptx(file_path):
                     if text:
                         slide_content.append(text)
             if shape.has_table:
-                table = shape.table
-                rows_list = list(table.rows)
-                if rows_list:
-                    md_table = []
-                    header = [cell.text.strip() for cell in rows_list[0].cells]
-                    md_table.append("| " + " | ".join(header) + " |")
-                    md_table.append("|" + "|".join(["---"] * len(header)) + "|")
-                    for row in rows_list[1:]:
-                        row_data = [cell.text.strip() for cell in row.cells]
-                        md_table.append("| " + " | ".join(row_data) + " |")
-                    slide_content.append("\n".join(md_table))
+                rows_list = list(shape.table.rows)
+                md_table = _format_md_table(rows_list)
+                if md_table:
+                    slide_content.append(md_table)
 
         slide_text = f"[幻灯片 {slide_idx}] " + "\n".join(slide_content)
 
@@ -254,20 +267,7 @@ def build_and_save():
             if ext == '.docx':
                 print(f"  处理: {rel_path}")
                 full_text = parse_docx(abs_path)
-                if not full_text:
-                    continue
-                chunks = split_text(full_text)
-                print(f"    {len(full_text)} 字符 → {len(chunks)} 个chunk")
-                for chunk in chunks:
-                    vector = get_text_embedding(chunk)
-                    all_vectors.append(vector)
-                    metadata_store.append({
-                        "id": doc_id,
-                        "source": rel_path,
-                        "type": "text",
-                        "content": chunk
-                    })
-                    doc_id += 1
+                doc_id = _process_text_content(full_text, rel_path, all_vectors, metadata_store, doc_id)
 
             elif ext == '.doc':
                 if is_ooxml_format(abs_path):
@@ -281,38 +281,12 @@ def build_and_save():
                         full_text = parse_doc_with_antiword(abs_path)
                         if full_text is None:
                             continue
-                if not full_text:
-                    continue
-                chunks = split_text(full_text)
-                print(f"    {len(full_text)} 字符 → {len(chunks)} 个chunk")
-                for chunk in chunks:
-                    vector = get_text_embedding(chunk)
-                    all_vectors.append(vector)
-                    metadata_store.append({
-                        "id": doc_id,
-                        "source": rel_path,
-                        "type": "text",
-                        "content": chunk
-                    })
-                    doc_id += 1
+                doc_id = _process_text_content(full_text, rel_path, all_vectors, metadata_store, doc_id)
 
             elif ext == '.pptx':
                 print(f"  处理: {rel_path}")
                 full_text = parse_pptx(abs_path)
-                if not full_text:
-                    continue
-                chunks = split_text(full_text)
-                print(f"    {len(full_text)} 字符 → {len(chunks)} 个chunk")
-                for chunk in chunks:
-                    vector = get_text_embedding(chunk)
-                    all_vectors.append(vector)
-                    metadata_store.append({
-                        "id": doc_id,
-                        "source": rel_path,
-                        "type": "text",
-                        "content": chunk
-                    })
-                    doc_id += 1
+                doc_id = _process_text_content(full_text, rel_path, all_vectors, metadata_store, doc_id)
 
             elif ext == '.ppt':
                 if is_ooxml_format(abs_path):
@@ -324,38 +298,12 @@ def build_and_save():
                     if full_text is None:
                         print(f"    警告: win32com 解析失败，跳过: {rel_path}")
                         continue
-                if not full_text:
-                    continue
-                chunks = split_text(full_text)
-                print(f"    {len(full_text)} 字符 → {len(chunks)} 个chunk")
-                for chunk in chunks:
-                    vector = get_text_embedding(chunk)
-                    all_vectors.append(vector)
-                    metadata_store.append({
-                        "id": doc_id,
-                        "source": rel_path,
-                        "type": "text",
-                        "content": chunk
-                    })
-                    doc_id += 1
+                doc_id = _process_text_content(full_text, rel_path, all_vectors, metadata_store, doc_id)
 
             elif ext == '.pdf':
                 print(f"  处理: {rel_path}")
                 full_text = parse_pdf(abs_path)
-                if not full_text:
-                    continue
-                chunks = split_text(full_text)
-                print(f"    {len(full_text)} 字符 → {len(chunks)} 个chunk")
-                for chunk in chunks:
-                    vector = get_text_embedding(chunk)
-                    all_vectors.append(vector)
-                    metadata_store.append({
-                        "id": doc_id,
-                        "source": rel_path,
-                        "type": "text",
-                        "content": chunk
-                    })
-                    doc_id += 1
+                doc_id = _process_text_content(full_text, rel_path, all_vectors, metadata_store, doc_id)
 
             elif ext in IMAGE_EXTENSIONS:
                 print(f"  处理图片: {rel_path}")
