@@ -9,17 +9,15 @@
 - `.doc` 文件 magic bytes 检测生效（OOXML 格式用 python-docx 解析，OLE2 格式用 win32com）
 - `.ppt` 文件 win32com 解析生效（使用 `WithWindow=False` 替代 `Visible=False`）
 - 12 个单元测试全部通过（`tests/test_win32com_parsers.py`）
+- **双路检索功能已实现**：向量检索 + 关键词回退检索图片 metadata
+- **14 个新测试用例全部通过**（`test_5_disney_query.py`），全部 Mock，无真实 API 调用
 
 ## 本轮改动
 
 | 文件 | 改动 |
 |------|------|
-| `requirements.txt` | 新增 `pywin32==306` |
-| `win32com_doc_ppt_parser.py` | **新增模块**：`parse_doc_with_win32com()` + `parse_ppt_with_win32com()` |
-| `tests/test_win32com_parsers.py` | **新增**：12 个单元测试，覆盖 .doc/.ppt 正常解析、中文、表格、异常处理 |
-| `4-disney_build_index.py` | 导入 win32com 解析器，`.doc` OLE2 优先 win32com + antiword 降级，`.ppt` OLE2 使用 win32com |
-| `CLAUDE.md` | 更新 `.doc`/`.ppt` 解析方式和已知限制 |
-| `docs/DOC_PPT_PARSING_SPEC.md` | 精简为单一方案文档（win32com） |
+| `5-disney_query.py` | 新增 `extract_search_keywords()`（停用词过滤 + 媒体意图词移除）、`keyword_search()`（metadata 关键词匹配，支持 OR 逻辑和 type 过滤）、`search_images_by_text()`（图片专门检索）；修改 `rag_ask()` 增加关键词回退匹配图片逻辑 |
+| `test_5_disney_query.py` | **新增模块**：14 个单元测试，覆盖 keyword_search（6 个）、search_images_by_text（5 个）、rag_ask 集成测试（3 个） |
 
 ## 仍损坏或未验证
 
@@ -32,7 +30,7 @@
 
 1. 安装 antiword（如需完整解析旧版 .doc 文件）
 2. 设置 `DASHSCOPE_API_KEY2` 环境变量，运行真实端到端构建验证
-3. 验证 `python 5-disney_query.py` 交互查询模式
+3. 验证 `python 5-disney_query.py` 交互查询模式中图片关键词回退效果
 
 ## 常用命令
 
@@ -41,7 +39,7 @@
 ./.venv/Scripts/python -m pip install -r requirements.txt
 
 # 运行单元测试
-./.venv/Scripts/python -m unittest tests.test_win32com_parsers -v
+./.venv/Scripts/python -m pytest test_5_disney_query.py -v
 
 # 构建索引（需设置 DASHSCOPE_API_KEY2）
 ./.venv/Scripts/python 4-disney_build_index.py
