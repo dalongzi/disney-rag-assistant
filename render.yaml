@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: disney-rag-assistant
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      cd disney-web && npm install && npm run build && cd ..
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app
+    envVars:
+      - key: DASHSCOPE_API_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: 20
+    plan: free
