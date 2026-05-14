@@ -1,0 +1,61 @@
+.welcome-card {
+  align-self: center;
+  text-align: center;
+  padding: 28px 40px;
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.08), rgba(212, 168, 67, 0.02));
+  border: 1px solid rgba(212, 168, 67, 0.15);
+  border-radius: var(--radius-lg);
+  max-width: 480px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.welcome-card .welcome-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  background: linear-gradient(135deg, var(--burgundy), var(--burgundy-deep));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 4px 16px var(--warm-shadow-lg);
+}
+
+.welcome-card h3 {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--burgundy-deep);
+  margin-bottom: 6px;
+}
+
+.welcome-card p {
+  font-size: 0.82rem;
+  color: var(--brown-light);
+  line-height: 1.6;
+}
+
+.welcome-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.welcome-suggestion {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(212, 168, 67, 0.3);
+  background: var(--cream-warm);
+  font-size: 0.75rem;
+  color: var(--brown);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.welcome-suggestion:hover {
+  border-color: var(--gold);
+  background: rgba(212, 168, 67, 0.1);
+  color: var(--burgundy);
+}

@@ -1,0 +1,61 @@
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-size: 15px; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--brown-dark);
+  background: var(--cream);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sparkle-field {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--gold-light);
+  border-radius: 50%;
+  opacity: 0;
+  animation: sparkle-float 8s ease-in-out infinite;
+}
+
+.sparkle::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(circle, var(--gold-pale), transparent 70%);
+  border-radius: 50%;
+}
+
+.sparkle:nth-child(1)  { left: 8%;  top: 15%; animation-delay: 0s;   animation-duration: 7s; }
+.sparkle:nth-child(2)  { left: 25%; top: 70%; animation-delay: 1.5s; animation-duration: 9s; }
+.sparkle:nth-child(3)  { left: 45%; top: 25%; animation-delay: 3s;   animation-duration: 8s; }
+.sparkle:nth-child(4)  { left: 65%; top: 80%; animation-delay: 0.8s; animation-duration: 10s; }
+.sparkle:nth-child(5)  { left: 80%; top: 40%; animation-delay: 2.2s; animation-duration: 7.5s; }
+.sparkle:nth-child(6)  { left: 92%; top: 60%; animation-delay: 4s;   animation-duration: 8.5s; }
+.sparkle:nth-child(7)  { left: 15%; top: 90%; animation-delay: 1s;   animation-duration: 9.5s; }
+.sparkle:nth-child(8)  { left: 55%; top: 50%; animation-delay: 3.5s; animation-duration: 7s; }
+.sparkle:nth-child(9)  { left: 35%; top: 35%; animation-delay: 2s;   animation-duration: 11s; }
+.sparkle:nth-child(10) { left: 72%; top: 18%; animation-delay: 4.5s; animation-duration: 8s; }

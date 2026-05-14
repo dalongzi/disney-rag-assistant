@@ -1,0 +1,25 @@
+:root {
+  --burgundy-deep: #3d0f1a;
+  --burgundy: #6b1d2a;
+  --burgundy-light: #8a2e40;
+  --gold: #d4a843;
+  --gold-light: #f0d68a;
+  --gold-pale: #f9eeb8;
+  --cream: #fdf6e3;
+  --cream-warm: #fef9ef;
+  --cream-dark: #f5ebd0;
+  --purple: #7b2d8e;
+  --brown-dark: #3a2a1a;
+  --brown: #5a4030;
+  --brown-light: #8a7060;
+  --warm-shadow: rgba(107, 29, 42, 0.12);
+  --warm-shadow-lg: rgba(107, 29, 42, 0.2);
+  --font-display: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  --font-body: 'Noto Sans SC', sans-serif;
+  --font-serif: 'Noto Serif SC', serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}

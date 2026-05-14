@@ -1,0 +1,239 @@
+.top-nav {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  background: linear-gradient(180deg, var(--burgundy-deep) 0%, var(--burgundy) 100%);
+  box-shadow: 0 2px 20px var(--warm-shadow-lg), 0 1px 4px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.top-nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gold) 15%,
+    var(--gold-light) 50%,
+    var(--gold) 85%,
+    transparent 100%
+  );
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+
+.logo-castle {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+
+.logo-castle .tower {
+  position: absolute;
+  bottom: 0;
+  width: 6px;
+  background: var(--gold);
+  border-radius: 3px 3px 0 0;
+}
+
+.logo-castle .tower:nth-child(1) { left: 2px; height: 20px; }
+.logo-castle .tower:nth-child(2) { left: 10px; height: 26px; }
+.logo-castle .tower:nth-child(3) { left: 18px; height: 32px; }
+.logo-castle .tower:nth-child(4) { left: 26px; height: 26px; }
+.logo-castle .tower:nth-child(5) { left: 34px; height: 20px; }
+
+.logo-castle .tower::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 7px solid var(--gold);
+}
+
+.logo-castle .tower:nth-child(3)::before {
+  border-left-width: 5px;
+  border-right-width: 5px;
+  border-bottom-width: 9px;
+  top: -8px;
+}
+
+.logo-castle .wall {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 42px;
+  height: 8px;
+  background: var(--gold);
+  border-radius: 0 0 4px 4px;
+}
+
+.logo-castle .flag {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 5px;
+  background: var(--gold-light);
+  clip-path: polygon(0 0, 100% 30%, 0 100%);
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.logo-text .brand {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--gold-light);
+  letter-spacing: 0.02em;
+}
+
+.logo-text .subtitle {
+  font-size: 0.62rem;
+  color: rgba(240, 214, 138, 0.55);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+
+.nav-links li {
+  position: relative;
+}
+
+.nav-links a {
+  display: block;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: rgba(253, 246, 227, 0.72);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), background var(--transition);
+  cursor: pointer;
+}
+
+.nav-links a:hover {
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-links a.active {
+  color: var(--gold-light);
+  font-weight: 500;
+}
+
+.nav-links a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--gold);
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-user .notification {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.nav-user .notification:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-user .notification .bell {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid rgba(240, 214, 138, 0.6);
+  border-radius: 50% 50% 0 0;
+  position: relative;
+}
+
+.nav-user .notification .bell::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 1.5px;
+  background: rgba(240, 214, 138, 0.6);
+}
+
+.nav-user .notification .badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 1.5px solid var(--burgundy-deep);
+}
+
+.nav-user .avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--burgundy-deep);
+  cursor: pointer;
+  border: 2px solid rgba(240, 214, 138, 0.3);
+}
+
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+}
+
+@media (max-width: 640px) {
+  .top-nav { padding: 0 16px; }
+}

@@ -1,42 +1,56 @@
 # 会话交接摘要
 
-## 当前已验证
+## 当前验证状态
 
-- `4-disney_build_index.py` 索引构建成功，生成 346 条记录（334 文本 + 11 图片 + 1 视频）
-- `5-disney_query.py` 分类型独立检索功能已实现并验证通过
-- **意图前置检索**：`rag_ask` 先检测媒体意图，再传给 `search_all`，确保图片/视频在结果前列
-- **交叉合并策略**：`_interleave_results` 按 1:3 比例穿插 media 和 text，保证媒体曝光
-- **阈值自适应**：有媒体意图时 `MEDIA_DISTANCE_THRESHOLD` 放宽至 2 倍（6.0）
-- 实测验证：查询"最近万圣节的活动海报是什么"成功返回 `images\2-万圣节.jpeg`（排名第 1）
-- 12 个单元测试全部通过（`tests/test_win32com_parsers.py`）
+- 索引构建：346 条记录（334 文本 + 11 图片 + 1 视频）
+- 后端 API：FastAPI，端口 5000，流式 SSE 响应正常
+- 前端：React + Vite + TypeScript，10 个测试文件 / 37 个测试全部通过
+- 后端测试：8 个测试全部通过（Mock 所有外部依赖）
+- 总计 45 个测试通过
 
 ## 本轮改动
 
-| 文件 | 改动 |
+1. **修复 SSE 流式输出卡死**：`_stream_llm` 原先返回的数据已含 `data: ` 前缀和 `\n\n` 后缀，但 `event_generator` 又包了一层导致双重包装（`data: data: ...`）。改为 `_stream_llm` 只输出纯 JSON payload，SSE 格式化由 `event_generator` 统一处理。
+
+2. **新增资源标签点击展开功能**：
+   - 后端新增 `/api/resource/detail` POST 端点，支持 text/image/video 三种类型
+     - text：返回匹配的文本记录原文（content + source）
+     - image：返回图片静态 URL
+     - video：返回视频 URL 和描述
+   - 前端新增 `ResourceDetail` 内联展开组件，支持加载/错误/内容三种状态
+   - `ResourceTag` 组件新增 `onClick` prop
+   - `MessageBubble` 管理展开状态，点击标签时内联渲染详情
+   - 新建 `resourceApi.ts` 服务层封装 API 调用
+   - 严格遵循 TDD：先写 8 后端测试 + 7 前端测试，再写实现
+
+## 新增文件
+
+| 文件 | 说明 |
 |------|------|
-| `5-disney_query.py` | **重大重构**：新增 `_make_result()`（统一结果字典构造）、`_interleave_results()`（交叉合并 text/media）、`search_by_intent()`（分类型独立检索）、`_find_best_media()`（统一图片/视频筛选）；改造 `search_all()` 支持 `media_intent` 参数；改造 `rag_ask()` 意图检测前置，移除关键词回退逻辑。**清理死代码**：删除未使用的 `extract_search_keywords`、`keyword_search`、`search_images_by_text` 函数 |
+| `tests/test_api_server.py` | 后端 API 测试（8 个测试，Mock 所有外部依赖） |
+| `disney-web/src/components/ResourceDetail/ResourceDetail.tsx` | 资源详情内联展开组件 |
+| `disney-web/src/components/ResourceDetail/ResourceDetail.css` | 详情组件样式 |
+| `disney-web/src/components/ResourceDetail/ResourceDetail.test.tsx` | 详情组件测试（7 个测试） |
+| `disney-web/src/services/resourceApi.ts` | 资源详情 API 服务层 |
+| `disney-web/src/services/resourceApi.test.ts` | API 服务层测试（2 个测试） |
 
-## 仍损坏或未验证
+## 修改文件
 
-- **PDF 解析**：部分 PDF 文件曾出现过错误（控制台输出有乱码），但不影响索引构建完成
-- **`test_5_disney_query.py` 不存在**：session-handoff 中提及的 14 个查询测试文件未在项目中发现
+| 文件 | 说明 |
+|------|------|
+| `api_server.py` | 修复 SSE 双重包装 + 新增 `/api/resource/detail` 端点 |
+| `disney-web/src/components/ResourceTag/ResourceTag.tsx` | 新增 `onClick` prop 和 `resource-tag--clickable` 样式 |
+| `disney-web/src/components/ResourceTag/ResourceTag.test.tsx` | 新增 2 个点击交互测试 |
+| `disney-web/src/components/MessageBubble/MessageBubble.tsx` | 新增展开状态管理，集成 `ResourceDetail` |
+| `disney-web/src/components/MessageBubble/MessageBubble.test.tsx` | 新增 1 个展开交互测试 |
 
-## 下一步最佳动作
+## 已知问题
 
-1. 为 `search_by_intent` / `_interleave_results` 等新增函数补充单元测试
+- 图片静态文件服务 `/static/images/` 尚未在 FastAPI 中挂载（需添加 `StaticFiles`）
+- 图片路径编码：Windows 路径含中文，可能存在 URL 编码问题
 
-## 常用命令
+## 下一步建议
 
-```bash
-# 安装依赖
-./.venv/Scripts/python -m pip install -r requirements.txt
-
-# 运行单元测试
-./.venv/Scripts/python -m pytest tests/ -v
-
-# 构建索引（需设置 DASHSCOPE_API_KEY2）
-./.venv/Scripts/python 4-disney_build_index.py
-
-# 交互查询
-./.venv/Scripts/python 5-disney_query.py
-```
+- 为 `/static/images/` 添加 FastAPI StaticFiles 支持，使图片详情可正常展示
+- 视频 URL 为外部 COS 地址，确认跨域可访问性
+- text 类型详情目前返回全部文本记录，可优化为基于检索结果的相关性排序
