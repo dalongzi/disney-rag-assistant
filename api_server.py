@@ -96,13 +96,14 @@ def _prepare_context(index, metadata, question):
     if not tags:
         tags.append({"type": "text", "label": f"匹配 {len(top_text)} 条相关记录"})
 
-    return context_str, tags, len(top_text)
+    top_text_serializable = [
+        {"metadata": {"source": r["metadata"]["source"], "content": r["metadata"]["content"]}}
+        for r in top_text
+    ]
+    return context_str, tags, len(top_text), top_text_serializable
 
 def _stream_llm(prompt: str):
     """流式调用 LLM 生成回答，逐 token yield（纯 JSON payload，不含 SSE 前缀）"""
-    import dashscope
-    from http import HTTPStatus
-
     api_key = os.getenv("DASHSCOPE_API_KEY2")
     if not api_key:
         yield json.dumps({"token": "根据知识库检索，我找到了以下相关信息。"}, ensure_ascii=False)
@@ -146,7 +147,7 @@ async def ask_question_stream(req: QuestionRequest):
     metadata = app.state.metadata
     question = req.question
 
-    context_str, tags, source_count = _prepare_context(index, metadata, question)
+    context_str, tags, source_count, top_text = _prepare_context(index, metadata, question)
 
     prompt = f"""你是一个迪士尼客服助手。请根据以下背景知识回答用户问题。
 
@@ -156,7 +157,7 @@ async def ask_question_stream(req: QuestionRequest):
 用户问题：{question}"""
 
     async def event_generator():
-        meta = json.dumps({"tags": tags, "sourceCount": source_count}, ensure_ascii=False)
+        meta = json.dumps({"tags": tags, "sourceCount": source_count, "prompt": prompt, "contextItems": top_text}, ensure_ascii=False)
         yield f"data: {meta}\n\n"
         async for chunk_str in _async_generator(prompt):
             yield f"data: {chunk_str}\n\n"
@@ -217,7 +218,7 @@ async def ask_question(req: QuestionRequest):
     metadata = app.state.metadata
     question = req.question
 
-    context_str, tags, source_count = _prepare_context(index, metadata, question)
+    context_str, tags, source_count, _ = _prepare_context(index, metadata, question)
 
     prompt = f"""你是一个迪士尼客服助手。请根据以下背景知识回答用户问题。
 
@@ -239,9 +240,6 @@ async def ask_question(req: QuestionRequest):
 
 def _call_llm_non_stream(prompt: str) -> str:
     """非流式 LLM 调用"""
-    import dashscope
-    from http import HTTPStatus
-
     api_key = os.getenv("DASHSCOPE_API_KEY2")
     if not api_key:
         return "根据知识库检索，我找到了以下相关信息。"

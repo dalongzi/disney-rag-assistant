@@ -4,6 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 
 export interface StreamCallbacks {
   onToken: (token: string) => void
+  onContextItems?: (items: Array<{ metadata: { source: string; content: string } }>) => void
   onDone: (tags: ResourceTag[], sourceCount: number) => void
   onError: (error: Error) => void
 }
@@ -41,6 +42,12 @@ export async function queryRagStream(question: string, callbacks: StreamCallback
           if (payload.tags) {
             tags = payload.tags
             sourceCount = payload.sourceCount ?? 0
+          }
+          if (payload.prompt && import.meta.env.DEV) {
+            console.log('[最终提示词]', payload.prompt)
+          }
+          if (payload.contextItems) {
+            callbacks.onContextItems?.(payload.contextItems)
           }
           if (payload.token) {
             callbacks.onToken(payload.token)

@@ -10,18 +10,17 @@
 
 ## 本轮改动
 
-1. **修复 SSE 流式输出卡死**：`_stream_llm` 原先返回的数据已含 `data: ` 前缀和 `\n\n` 后缀，但 `event_generator` 又包了一层导致双重包装（`data: data: ...`）。改为 `_stream_llm` 只输出纯 JSON payload，SSE 格式化由 `event_generator` 统一处理。
+1. **前端打印最终提示词**：后端 SSE 首事件增加 `prompt` 字段，前端在 `console.log` 中输出（仅开发环境 `import.meta.env.DEV`）。
 
-2. **新增资源标签点击展开功能**：
-   - 后端新增 `/api/resource/detail` POST 端点，支持 text/image/video 三种类型
-     - text：返回匹配的文本记录原文（content + source）
-     - image：返回图片静态 URL
-     - video：返回视频 URL 和描述
-   - 前端新增 `ResourceDetail` 内联展开组件，支持加载/错误/内容三种状态
-   - `ResourceTag` 组件新增 `onClick` prop
-   - `MessageBubble` 管理展开状态，点击标签时内联渲染详情
-   - 新建 `resourceApi.ts` 服务层封装 API 调用
-   - 严格遵循 TDD：先写 8 后端测试 + 7 前端测试，再写实现
+2. **资源标签详情与提示词背景知识一致**：
+   - 后端 `_prepare_context` 新增返回 `top_text_serializable`（实际用于构建提示词的 top text 记录）
+   - SSE 首事件增加 `contextItems` 字段，前端缓存后点击 text 标签时直接读取，不再走 `/api/resource/detail` 回退
+   - `clearMessages()` 同步清理缓存，避免跨会话展示陈旧上下文
+
+3. **死代码清理（simplify）**：
+   - 删除 `api_server.py` 中两个未使用的 `import dashscope`
+   - 删除 `5-disney_query.py` 中调试用的 `print(f"\nPrompt: {prompt}")`
+   - `onContextItems` 改为可选回调，兼容 `queryRag` 非流式调用
 
 ## 新增文件
 
@@ -38,7 +37,11 @@
 
 | 文件 | 说明 |
 |------|------|
-| `api_server.py` | 修复 SSE 双重包装 + 新增 `/api/resource/detail` 端点 |
+| `api_server.py` | 修复 SSE 双重包装 + 新增 `/api/resource/detail` 端点 + 新增 `prompt`/`contextItems` 字段 + 删除未使用的 `dashscope` 导入 |
+| `5-disney_query.py` | 新增/删除提示词调试打印 |
+| `disney-web/src/services/ragApi.ts` | 新增 `onContextItems` 可选回调 + `console.log` 仅在开发环境打印 |
+| `disney-web/src/hooks/useChat.ts` | 新增 `cachedContextItems` 模块级缓存 + `clearMessages` 清理逻辑 |
+| `disney-web/src/components/ResourceDetail/ResourceDetail.tsx` | text 类型优先读取缓存，展示与提示词完全一致的背景知识 |
 | `disney-web/src/components/ResourceTag/ResourceTag.tsx` | 新增 `onClick` prop 和 `resource-tag--clickable` 样式 |
 | `disney-web/src/components/ResourceTag/ResourceTag.test.tsx` | 新增 2 个点击交互测试 |
 | `disney-web/src/components/MessageBubble/MessageBubble.tsx` | 新增展开状态管理，集成 `ResourceDetail` |
@@ -48,9 +51,10 @@
 
 - 图片静态文件服务 `/static/images/` 尚未在 FastAPI 中挂载（需添加 `StaticFiles`）
 - 图片路径编码：Windows 路径含中文，可能存在 URL 编码问题
+- `prompt` 和 `contextItems` 放在 SSE 首事件中，导致首个事件体积较大（生产环境可考虑按需关闭）
 
 ## 下一步建议
 
 - 为 `/static/images/` 添加 FastAPI StaticFiles 支持，使图片详情可正常展示
 - 视频 URL 为外部 COS 地址，确认跨域可访问性
-- text 类型详情目前返回全部文本记录，可优化为基于检索结果的相关性排序
+- 评估是否将 `prompt` 从生产 SSE 响应中移除，改为单独调试端点

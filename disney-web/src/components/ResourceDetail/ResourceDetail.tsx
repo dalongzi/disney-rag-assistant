@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ResourceTag } from '../../types'
 import { getResourceDetail } from '../../services/resourceApi'
 import type { DetailItem } from '../../services/resourceApi'
+import { getContextCache } from '../../hooks/useChat'
 import './ResourceDetail.css'
 
 export interface ResourceDetailProps {
@@ -56,6 +57,16 @@ export function ResourceDetail({ tag, isOpen, onClose }: ResourceDetailProps) {
     setLoading(true)
     setError(null)
     setItems([])
+
+    // text 类型优先使用缓存的背景知识（与提示词中使用的完全一致）
+    if (tag.type === 'text') {
+      const cache = getContextCache()
+      if (cache && cache.length > 0) {
+        setItems(cache.map((r) => ({ content: r.metadata.content, source: r.metadata.source })))
+        setLoading(false)
+        return
+      }
+    }
 
     getResourceDetail(tag.type, tag.label)
       .then((data) => {

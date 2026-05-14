@@ -16,6 +16,13 @@ export interface UseChatActions {
   clearMessages: () => void
 }
 
+/** 缓存最后一次回答实际用到的 text 背景知识 */
+let cachedContextItems: Array<{ metadata: { source: string; content: string } }> | null = null
+
+export function getContextCache() {
+  return cachedContextItems
+}
+
 export function useChat(): UseChatState & UseChatActions {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -57,6 +64,9 @@ export function useChat(): UseChatState & UseChatActions {
           )
         )
       },
+      onContextItems: (items) => {
+        cachedContextItems = items
+      },
       onDone: (tags, sourceCount) => {
         setMessages((prev) =>
           prev.map((m) =>
@@ -83,6 +93,7 @@ export function useChat(): UseChatState & UseChatActions {
     setIsTyping(false)
     setIsLoading(false)
     abortRef.current = true
+    cachedContextItems = null
   }, [])
 
   return { messages, isTyping, isLoading, sendMessage, clearMessages }
